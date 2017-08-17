@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff"
+    tools:context="com.cccg.example.musictest.BigCarActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="100dp">
+        <ImageButton
+            android:id="@+id/btn_go"
+            android:layout_width="80dp"
+            android:layout_height="90dp"
+            android:background="@drawable/up"
+            android:layout_margin="15dp"/>
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="80dp"
+            android:layout_height="90dp"
+            android:background="@drawable/down"
+            android:layout_margin="15dp"/>
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:id="@+id/btn_left"
+            android:layout_width="90dp"
+            android:layout_height="80dp"
+            android:background="@drawable/left"
+            android:layout_margin="15dp"/>
+        <ImageButton
+            android:id="@+id/btn_right"
+            android:layout_width="90dp"
+            android:layout_height="80dp"
+            android:background="@drawable/right"
+            android:layout_margin="15dp"/>
+    </LinearLayout>
+
+</LinearLayout>
