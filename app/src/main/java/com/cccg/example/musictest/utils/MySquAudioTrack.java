@@ -10,14 +10,14 @@ import android.media.AudioTrack;
 
 public class MySquAudioTrack {
 
-    public static final int RATE=88200;         //音频采样率，16位时为88200，8位时为44100
+    public static final int RATE=44100;         //音频采样率，16位时为88200，8位时为44100
     public static final int NONE=0;             //声道标志
     public static final int LEFT=1;
     public static final int RIGHT=2;
     public static final int DOUBLE=3;
-    public static final int units=266;          //三类数据波长度
-    public static final int unit_=89;
-    public static final int unit=88;
+    public static final int units=66;          //三类数据波长度
+    public static final int unit_=22;
+    public static final int unit=22 ;
     public static short[] over=new short[8*(units+unit+unit_+unit)];        //数据波结束信号波
 
     private short[] wave=new short[RATE];       //记录生成的波形
@@ -29,8 +29,8 @@ public class MySquAudioTrack {
         over=squ(over,over.length/2,over.length);
         if(count>0){
             waveLen = 4*(units+unit)+count*(unit_+unit);
-            int buffer=AudioTrack.getMinBufferSize(RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_16BIT);
-            audioTrack=new AudioTrack(AudioManager.STREAM_MUSIC, RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_16BIT, buffer*2, AudioTrack.MODE_STREAM);
+            int buffer=AudioTrack.getMinBufferSize(RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_8BIT);
+            audioTrack=new AudioTrack(AudioManager.STREAM_MUSIC, RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_8BIT, buffer*2, AudioTrack.MODE_STREAM);
             wave=squ(wave,waveLen, waveLen);
             maxVolume=audioTrack.getMaxVolume();
         }else{

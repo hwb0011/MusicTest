@@ -10,7 +10,7 @@ import android.media.AudioTrack;
 
 public class MySinAudioTrack {
 
-    public static final int RATE=88200;         //音频采样率，16位时为88200，8位时为44100
+    public static final int RATE=44100;         //音频采样率，16位时为88200，8位时为44100
     public static final int NONE=0;             //声道标志
     public static final int LEFT=1;
     public static final int RIGHT=2;
@@ -26,8 +26,8 @@ public class MySinAudioTrack {
         if(rate>0){
             waveLen = RATE/rate;
             length = waveLen * rate;
-            int buffer=AudioTrack.getMinBufferSize(RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_16BIT);
-            audioTrack=new AudioTrack(AudioManager.STREAM_MUSIC, RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_16BIT, buffer*2, AudioTrack.MODE_STREAM);
+            int buffer=AudioTrack.getMinBufferSize(RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_8BIT);
+            audioTrack=new AudioTrack(AudioManager.STREAM_MUSIC, RATE,AudioFormat.CHANNEL_CONFIGURATION_STEREO,AudioFormat.ENCODING_PCM_8BIT, buffer*2, AudioTrack.MODE_STREAM);
             wave=sin(wave, waveLen, length);
             maxVolume=audioTrack.getMaxVolume();
         }else{

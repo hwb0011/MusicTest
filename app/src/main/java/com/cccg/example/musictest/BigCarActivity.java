@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,6 +39,7 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
     private int state;                              //记录播放状态标志
     private int volume;                             //不低于最大音量80%的音量大小
     private AudioManager audioManager;              //通过AudioManager获取音量信息
+    private Thread mThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +83,8 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
     @Override
     public void onBackPressed() {
         startActivity(new Intent(BigCarActivity.this,MainActivity.class));
+        mThread.interrupt();
+        mThread=null;
         finish();
     }
 
@@ -115,7 +119,7 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
         atkBackRight=new MySquAudioTrack(46);
         atkBackRight.setVolume(MySquAudioTrack.LEFT);
         //开启线程，监测AudioTrack的播放状态，执行对应的AudioTrack的播放操作
-        new Thread(new Runnable() {
+        mThread=new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true){
@@ -151,7 +155,8 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
                     }
                 }
             }
-        }).start();
+        });
+        mThread.start();
     }
 
     @Override
