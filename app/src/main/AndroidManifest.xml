@@ -17,7 +17,8 @@
         <activity
             android:name=".BigCarActivity"
             android:label="大汽车遥控器"
-            android:screenOrientation="landscape"></activity>
+            android:screenOrientation="landscape"
+            android:theme="@style/BigTheme"></activity>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -11,7 +11,9 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.cccg.example.musictest.utils.GetWave;
 import com.cccg.example.musictest.utils.MySquAudioTrack;
+import com.cccg.example.musictest.utils.MyWave;
 
 public class BigCarActivity extends AppCompatActivity implements View.OnTouchListener {
 
@@ -19,14 +21,16 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
     private ImageButton btnBack;
     private ImageButton btnLeft;
     private ImageButton btnRight;
-    private MySquAudioTrack atkGo;                  //前后左右四个方向对应的自定义方波AudioTrack
-    private MySquAudioTrack atkBack;
-    private MySquAudioTrack atkLeft;
-    private MySquAudioTrack atkRight;
-    private MySquAudioTrack atkGoLeft;              //前进并左转AudioTrack
-    private MySquAudioTrack atkGoRight;             //前进并右转AudioTrack
-    private MySquAudioTrack atkBackLeft;            //后退并左转AudioTrack
-    private MySquAudioTrack atkBackRight;           //后退并右转AudioTrack
+    private MySquAudioTrack mAudioTrack;
+    private MyWave waveGo;
+    private MyWave waveBack;
+    private MyWave waveLeft;
+    private MyWave waveRight;
+    private MyWave waveGoLeft;
+    private MyWave waveGoRight;
+    private MyWave waveBackLeft;
+    private MyWave waveBackRight;
+
     private static final int STATE_NONE=0;          //播放状态标志值
     private static final int STATE_GO=1;
     private static final int STATE_BACK=2;
@@ -38,8 +42,10 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
     private static final int STATE_BACK_RIGHT=8;
     private int state;                              //记录播放状态标志
     private int volume;                             //不低于最大音量80%的音量大小
+    private boolean isThreadRun=true;
     private AudioManager audioManager;              //通过AudioManager获取音量信息
     private Thread mThread;
+    private MyRunnable mRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,10 +88,32 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
 
     @Override
     public void onBackPressed() {
+        isThreadRun=false;
         startActivity(new Intent(BigCarActivity.this,MainActivity.class));
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         mThread.interrupt();
         mThread=null;
-        finish();
+        mRunnable=null;
+        mAudioTrack.close();
+        mAudioTrack=null;
+        audioManager=null;
+        btnGo=null;
+        btnBack=null;
+        btnLeft=null;
+        btnRight=null;
+        waveGo=null;
+        waveBack=null;
+        waveLeft=null;
+        waveRight=null;
+        waveGoLeft=null;
+        waveGoRight=null;
+        waveBackLeft=null;
+        waveBackRight=null;
     }
 
     private void initView() {                       //初始化按钮并添加触摸监听事件
@@ -102,60 +130,19 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
 
     private void initData() {
         //初始化AudioTrack数据波数量与声道
-        atkGo=new MySquAudioTrack(10);
-        atkGo.setVolume(MySquAudioTrack.LEFT);
-        atkBack=new MySquAudioTrack(40);
-        atkBack.setVolume(MySquAudioTrack.LEFT);
-        atkLeft=new MySquAudioTrack(58);
-        atkLeft.setVolume(MySquAudioTrack.LEFT);
-        atkRight=new MySquAudioTrack(64);
-        atkRight.setVolume(MySquAudioTrack.LEFT);
-        atkGoLeft=new MySquAudioTrack(28);
-        atkGoLeft.setVolume(MySquAudioTrack.LEFT);
-        atkGoRight=new MySquAudioTrack(34);
-        atkGoRight.setVolume(MySquAudioTrack.LEFT);
-        atkBackLeft=new MySquAudioTrack(52);
-        atkBackLeft.setVolume(MySquAudioTrack.LEFT);
-        atkBackRight=new MySquAudioTrack(46);
-        atkBackRight.setVolume(MySquAudioTrack.LEFT);
+        mAudioTrack=new MySquAudioTrack();
+        mAudioTrack.setVolume(MySquAudioTrack.LEFT);
+        waveGo=new MyWave(GetWave.squ(new short[MyWave.RATE],10),GetWave.waveLen);
+        waveBack=new MyWave(GetWave.squ(new short[MyWave.RATE],40),GetWave.waveLen);
+        waveLeft=new MyWave(GetWave.squ(new short[MyWave.RATE],58),GetWave.waveLen);
+        waveRight=new MyWave(GetWave.squ(new short[MyWave.RATE],64),GetWave.waveLen);
+        waveGoLeft=new MyWave(GetWave.squ(new short[MyWave.RATE],28),GetWave.waveLen);
+        waveGoRight=new MyWave(GetWave.squ(new short[MyWave.RATE],34),GetWave.waveLen);
+        waveBackLeft=new MyWave(GetWave.squ(new short[MyWave.RATE],52),GetWave.waveLen);
+        waveBackRight=new MyWave(GetWave.squ(new short[MyWave.RATE],46),GetWave.waveLen);
         //开启线程，监测AudioTrack的播放状态，执行对应的AudioTrack的播放操作
-        mThread=new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true){
-                    switch (state){
-                        case STATE_NONE:
-                            break;
-                        case STATE_GO:
-                            atkGo.play();
-                            break;
-                        case STATE_BACK:
-                            atkBack.play();
-                            break;
-                        case STATE_LEFT:
-                            atkLeft.play();
-                            break;
-                        case STATE_RIGHT:
-                            atkRight.play();
-                            break;
-                        case STATE_GO_LEFT:
-                            atkGoLeft.play();
-                            break;
-                        case STATE_GO_RIGHT:
-                            atkGoRight.play();
-                            break;
-                        case STATE_BACK_LEFT:
-                            atkBackLeft.play();
-                            break;
-                        case STATE_BACK_RIGHT:
-                            atkBackRight.play();
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        });
+        mRunnable=new MyRunnable();
+        mThread=new Thread(mRunnable);
         mThread.start();
     }
 
@@ -163,35 +150,27 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
     public boolean onTouch(View view, MotionEvent motionEvent) {
         //当按钮按下时，记录对应的AudioTrack播放标志。
         //当按钮松开时，记录对应的AudioTrack播放标志，立即停止AudioTrack的播放，播放数据波停止音频。
-        switch (view.getId()){
+        int id=view.getId();
+        switch (id){
             case R.id.btn_go:
                 switch (motionEvent.getAction()){
                     case MotionEvent.ACTION_DOWN:
                         if(btnLeft.isPressed()){
                             state=STATE_GO_LEFT;
-                            atkLeft.stop();
-                            atkLeft.over();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
                         }else if (btnRight.isPressed()){
                             state=STATE_GO_RIGHT;
-                            atkRight.stop();
-                            atkRight.over();
-                        }else if(btnBack.isPressed()){
-                            Toast.makeText(BigCarActivity.this,"前进后退不可以同时按",Toast.LENGTH_SHORT).show();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
+                        //}else if(btnBack.isPressed()){
+                        //    Toast.makeText(BigCarActivity.this,"前进后退不可以同时按",Toast.LENGTH_SHORT).show();
                         }else {
                             state=STATE_GO;
                         }
                         break;
                     case MotionEvent.ACTION_UP:
-                        state=STATE_NONE;
-                        atkGo.stop();
-                        atkGoLeft.stop();
-                        atkGoRight.stop();
-                        atkGo.over();
-                        if(btnLeft.isPressed()){
-                            state=STATE_LEFT;
-                        }else if (btnRight.isPressed()){
-                            state=STATE_RIGHT;
-                        }
+                        buttonUp(id);
                         break;
                     default:
                         break;
@@ -202,29 +181,20 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
                     case MotionEvent.ACTION_DOWN:
                         if(btnLeft.isPressed()){
                             state=STATE_BACK_LEFT;
-                            atkLeft.stop();
-                            atkLeft.over();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
                         }else if (btnRight.isPressed()){
                             state=STATE_BACK_RIGHT;
-                            atkRight.stop();
-                            atkRight.over();
-                        }else if(btnGo.isPressed()){
-                            Toast.makeText(BigCarActivity.this,"前进后退不可以同时按",Toast.LENGTH_SHORT).show();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
+                        //}else if(btnGo.isPressed()){
+                        //    Toast.makeText(BigCarActivity.this,"前进后退不可以同时按",Toast.LENGTH_SHORT).show();
                         }else {
                             state=STATE_BACK;
                         }
                         break;
                     case MotionEvent.ACTION_UP:
-                        state=STATE_NONE;
-                        atkBack.stop();
-                        atkBackLeft.stop();
-                        atkBackRight.stop();
-                        atkBack.over();
-                        if(btnLeft.isPressed()){
-                            state=STATE_LEFT;
-                        }else if (btnRight.isPressed()){
-                            state=STATE_RIGHT;
-                        }
+                        buttonUp(id);
                         break;
                     default:
                         break;
@@ -235,29 +205,20 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
                     case MotionEvent.ACTION_DOWN:
                         if(btnGo.isPressed()){
                             state=STATE_GO_LEFT;
-                            atkGo.stop();
-                            atkGo.over();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
                         }else if (btnBack.isPressed()){
                             state=STATE_BACK_LEFT;
-                            atkBack.stop();
-                            atkBack.over();
-                        }else if(btnRight.isPressed()){
-                            Toast.makeText(BigCarActivity.this,"左转右转不可以同时按",Toast.LENGTH_SHORT).show();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
+                        //}else if(btnRight.isPressed()){
+                        //    Toast.makeText(BigCarActivity.this,"左转右转不可以同时按",Toast.LENGTH_SHORT).show();
                         }else {
                             state=STATE_LEFT;
                         }
                         break;
                     case MotionEvent.ACTION_UP:
-                        state=STATE_NONE;
-                        atkLeft.stop();
-                        atkGoLeft.stop();
-                        atkBackLeft.stop();
-                        atkLeft.over();
-                        if(btnGo.isPressed()){
-                            state=STATE_GO;
-                        }else if (btnBack.isPressed()){
-                            state=STATE_BACK;
-                        }
+                        buttonUp(id);
                         break;
                     default:
                         break;
@@ -268,29 +229,20 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
                     case MotionEvent.ACTION_DOWN:
                         if(btnGo.isPressed()){
                             state=STATE_GO_RIGHT;
-                            atkGo.stop();
-                            atkGo.over();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
                         }else if (btnBack.isPressed()){
                             state=STATE_BACK_RIGHT;
-                            atkBack.stop();
-                            atkBack.over();
-                        }else if(btnLeft.isPressed()){
-                            Toast.makeText(BigCarActivity.this,"左转右转不可以同时按",Toast.LENGTH_SHORT).show();
+                            mAudioTrack.stop();
+                            mAudioTrack.over();
+                        //}else if(btnLeft.isPressed()){
+                        //    Toast.makeText(BigCarActivity.this,"左转右转不可以同时按",Toast.LENGTH_SHORT).show();
                         }else {
                             state=STATE_RIGHT;
                         }
                         break;
                     case MotionEvent.ACTION_UP:
-                        state=STATE_NONE;
-                        atkRight.stop();
-                        atkGoRight.stop();
-                        atkBackRight.stop();
-                        atkRight.over();
-                        if(btnGo.isPressed()){
-                            state=STATE_GO;
-                        }else if (btnBack.isPressed()){
-                            state=STATE_BACK;
-                        }
+                        buttonUp(id);
                         break;
                     default:
                         break;
@@ -300,5 +252,59 @@ public class BigCarActivity extends AppCompatActivity implements View.OnTouchLis
                 break;
         }
         return false;
+    }
+
+    private void buttonUp(int id){
+        state=STATE_NONE;
+        mAudioTrack.stop();
+        mAudioTrack.over();
+        if(btnGo.isPressed()&&id!=R.id.btn_go){
+            state=STATE_GO;
+        }else if (btnBack.isPressed()&&id!=R.id.btn_back){
+            state=STATE_BACK;
+        }else if(btnLeft.isPressed()&&id!=R.id.btn_left){
+            state=STATE_LEFT;
+        }else if (btnRight.isPressed()&&id!=R.id.btn_right){
+            state=STATE_RIGHT;
+        }
+    }
+
+    class MyRunnable implements Runnable{
+
+        @Override
+        public void run() {
+            while (isThreadRun){
+                switch (state){
+                    case STATE_NONE:
+                        break;
+                    case STATE_GO:
+                        mAudioTrack.play(waveGo.getWave(),waveGo.getWaveLen());
+                        break;
+                    case STATE_BACK:
+                        mAudioTrack.play(waveBack.getWave(),waveBack.getWaveLen());
+                        break;
+                    case STATE_LEFT:
+                        mAudioTrack.play(waveLeft.getWave(),waveLeft.getWaveLen());
+                        break;
+                    case STATE_RIGHT:
+                        mAudioTrack.play(waveRight.getWave(),waveRight.getWaveLen());
+                        break;
+                    case STATE_GO_LEFT:
+                        mAudioTrack.play(waveGoLeft.getWave(),waveGoLeft.getWaveLen());
+                        break;
+                    case STATE_GO_RIGHT:
+                        mAudioTrack.play(waveGoRight.getWave(),waveGoRight.getWaveLen());
+                        break;
+                    case STATE_BACK_LEFT:
+                        mAudioTrack.play(waveBackLeft.getWave(),waveBackLeft.getWaveLen());
+                        break;
+                    case STATE_BACK_RIGHT:
+                        mAudioTrack.play(waveBackRight.getWave(),waveBackRight.getWaveLen());
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 }

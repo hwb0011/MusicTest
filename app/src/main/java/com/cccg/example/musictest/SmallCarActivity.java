@@ -10,20 +10,26 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.cccg.example.musictest.utils.GetWave;
 import com.cccg.example.musictest.utils.MySinAudioTrack;
+import com.cccg.example.musictest.utils.MyWave;
 
 public class SmallCarActivity extends AppCompatActivity implements View.OnTouchListener {
     private Button btnPlay250;                  //播放250HZ、1KHZ、3KHZ正弦波音频的按钮
     private Button btnPlay1K;
     private Button btnPlay3K;
-    private MySinAudioTrack atk250;             //播放250HZ、1KHZ、3KHZ正弦波音频的自定义AudioTrack
-    private MySinAudioTrack atk1K;
-    private MySinAudioTrack atk3K;
+    private MySinAudioTrack mAudioTrack;
+    private MyWave wave250;
+    private MyWave wave1K;
+    private MyWave wave3K;
     private boolean isPlay250=false;            //标记250HZ、1KHZ、3KHZ正弦波音频的播放与否
     private boolean isPlay1K=false;
     private boolean isPlay3K=false;
     private AudioManager audioManager;          //通过AudioManager获取音量信息
     private int volume;                         //不低于最大音量80%的音量大小
+    private boolean isThreadRun=true;
+    private MyRunnable mRunnable;
+    private Thread mThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +63,7 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
     @Override
     public void onBackPressed() {
         startActivity(new Intent(SmallCarActivity.this,MainActivity.class));
+        isThreadRun=false;
         finish();
     }
 
@@ -70,6 +77,23 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
         return super.onKeyDown(keyCode,event);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mThread.interrupt();
+        mThread=null;
+        mRunnable=null;
+        mAudioTrack.close();
+        mAudioTrack=null;
+        audioManager=null;
+        btnPlay250=null;
+        btnPlay1K=null;
+        btnPlay3K=null;
+        wave250=null;
+        wave1K=null;
+        wave3K=null;
+    }
+
     private void initView(){                    //初始化按钮并添加触摸监听事件
         btnPlay250=(Button) findViewById(R.id.btn_play250);
         btnPlay1K=(Button) findViewById(R.id.btn_play1K);
@@ -81,29 +105,15 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
 
     private void initData(){
         //初始化AudioTrack频率与声道
-        atk250=new MySinAudioTrack(125);
-        atk1K=new MySinAudioTrack(500);
-        atk3K=new MySinAudioTrack(1500);
-        atk250.setVolume(MySinAudioTrack.LEFT);
-        atk1K.setVolume(MySinAudioTrack.LEFT);
-        atk3K.setVolume(MySinAudioTrack.RIGHT);
+        wave250=new MyWave(GetWave.sin(new short[MyWave.RATE],125),GetWave.waveLen);
+        wave1K=new MyWave(GetWave.sin(new short[MyWave.RATE],500),GetWave.waveLen);
+        wave3K=new MyWave(GetWave.sin(new short[MyWave.RATE],1500),GetWave.waveLen);
+        mAudioTrack=new MySinAudioTrack();
+        mAudioTrack.setVolume(MySinAudioTrack.LEFT);
         //开启线程，监测AudioTrack的播放状态，执行对应的AudioTrack的播放操作
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true){
-                    if (isPlay250){
-                        atk250.play();
-                    }
-                    if (isPlay1K){
-                        atk1K.play();
-                    }
-                    if (isPlay3K){
-                        atk3K.play();
-                    }
-                }
-            }
-        }).start();
+        mRunnable=new MyRunnable();
+        mThread=new Thread(mRunnable);
+        mThread.start();
     }
 
     @Override
@@ -118,7 +128,6 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
                         break;
                     case MotionEvent.ACTION_UP:
                         isPlay250=false;
-                        atk250.stop();
                         break;
                     default:
                         break;
@@ -131,7 +140,6 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
                         break;
                     case MotionEvent.ACTION_UP:
                         isPlay1K=false;
-                        atk1K.stop();
                         break;
                     default:
                         break;
@@ -144,7 +152,6 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
                         break;
                     case MotionEvent.ACTION_UP:
                         isPlay3K=false;
-                        atk3K.stop();
                         break;
                     default:
                         break;
@@ -154,5 +161,23 @@ public class SmallCarActivity extends AppCompatActivity implements View.OnTouchL
                 break;
         }
         return false;
+    }
+
+    class MyRunnable implements Runnable{
+
+        @Override
+        public void run() {
+            while (isThreadRun){
+                if (isPlay250){
+                    mAudioTrack.play(wave250.getWave(),wave250.getWaveLen());
+                }
+                if (isPlay1K){
+                    mAudioTrack.play(wave1K.getWave(),wave1K.getWaveLen());
+                }
+                if (isPlay3K){
+                    mAudioTrack.play(wave3K.getWave(),wave3K.getWaveLen());
+                }
+            }
+        }
     }
 }
